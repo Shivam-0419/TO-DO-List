@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Profile - TO-DO LIST</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">TO-DO</div>
+        <div class="nav-links">
+            <!-- Links populated by ui-utils.js -->
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="profile-container">
+            <!-- Profile Card -->
+            <div class="profile-card">
+                <button class="edit-profile-btn" onclick="openModal()">Edit Profile</button>
+                <div class="profile-avatar-container">
+                    <img id="displayAvatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Avatar" class="profile-avatar">
+                    <button class="edit-avatar-btn" onclick="openModal()">✎</button>
+                </div>
+                <div class="profile-info">
+                    <h1 id="displayName">User Name</h1>
+                    <p id="displayEmail">user@example.com</p>
+                    <div class="profile-meta">
+                        <div class="meta-item">Username: <span id="displayUsername">username</span></div>
+                        <div class="meta-item">Tasks: <span id="taskCount">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="section-tab-container">
+                <div class="tab active" onclick="switchTab('tasks')">View Tasks</div>
+                <div class="tab" onclick="switchTab('settings')">Settings</div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div id="tasksSection" class="view-tasks-section active">
+                <div id="taskGrid" class="task-grid">
+                    <div class="empty-state">Loading your tasks...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Profile</h2>
+            </div>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editFullName" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="editEmail" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <input type="file" id="editAvatarFile" accept="image/*">
+                    <p style="font-size: 12px; color: #7ecfdf; margin-top: 5px;">Choose an image from your device.</p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="add-button btn-save">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <script src="ui-utils.js"></script>
+        <script>
+            const BASE_URL = window.location.origin;
+            const API_URL = `${BASE_URL}/api`;
+            const userId = localStorage.getItem('userId');
+
+            if (!userId) {
+                window.location.href = 'auth.html?mode=signin';
+            }
+
+            async function loadProfile() {
+                try {
+                    const response = await fetch(`${API_URL}/users/${userId}`);
+                    const user = await response.json();
+                    
+                    if (response.ok) {
+                        document.getElementById('displayName').innerText = user.fullName || user.username;
+                        document.getElementById('displayEmail').innerText = user.email || 'No email provided';
+                        document.getElementById('displayUsername').innerText = user.username;
+                        const avatarPath = user.profilePicture || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+                        document.getElementById('displayAvatar').src = avatarPath.startsWith('http') ? avatarPath : `${BASE_URL}${avatarPath}`;
+                        
+                        // Populate modal
+                        document.getElementById('editFullName').value = user.fullName || '';
+                        document.getElementById('editEmail').value = user.email || '';
+                        document.getElementById('editAvatarUrl').value = user.profilePicture || '';
+                    }
+                } catch (err) {
+                    console.error('Error loading profile:', err);
+                }
+            }
+
+            async function loadTasks() {
+                try {
+                    const response = await fetch(`${API_URL}/users/${userId}/tasks`);
+                    const tasks = await response.json();
+                    
+                    const taskGrid = document.getElementById('taskGrid');
+                    document.getElementById('taskCount').innerText = tasks.length;
+                    
+                    if (tasks.length === 0) {
+                        taskGrid.innerHTML = '<div class="empty-state">No tasks found. Start by creating one!</div>';
+                        return;
+                    }
+
+                    taskGrid.innerHTML = tasks.map(task => `
+                        <div class="dashboard-task-card" id="task-${task._id}">
+                            <div class="task-text">${task.text}</div>
+                            <div class="task-actions">
+                                <a href="task-view.html?id=${task._id}" class="view-btn">View</a>
+                                <button onclick="deleteTask('${task._id}')" class="delete-btn">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (err) {
+                    console.error('Error loading tasks:', err);
+                }
+            }
+
+            async function deleteTask(taskId) {
+                if (!confirm('Are you sure you want to delete this task?')) return;
+                try {
+                    const response = await fetch(`${API_URL}/tasks/${taskId}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        document.getElementById(`task-${taskId}`).remove();
+                        loadTasks(); // Refresh count
+                    }
+                } catch (err) { console.error(err); }
+            }
+
+            // Modal Logic
+            function openModal() { document.getElementById('profileModal').style.display = 'flex'; }
+            function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
+
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fullName = document.getElementById('editFullName').value;
+                const email = document.getElementById('editEmail').value;
+                const avatarFile = document.getElementById('editAvatarFile').files[0];
+
+                try {
+                    // 1. Update Profile Info (JSON)
+                    const infoResponse = await fetch(`${API_URL}/users/${userId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fullName, email })
+                    });
+
+                    // 2. Update Avatar if file selected (FormData)
+                    if (avatarFile) {
+                        const formData = new FormData();
+                        formData.append('avatar', avatarFile);
+                        
+                        const avatarResponse = await fetch(`${API_URL}/users/${userId}/avatar`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!avatarResponse.ok) {
+                            alert('Profile info updated, but avatar upload failed.');
+                        }
+                    }
+
+                    if (infoResponse.ok) {
+                        alert('Profile updated successfully!');
+                        closeModal();
+                        loadProfile();
+                    } else {
+                        alert('Failed to update profile info');
+                    }
+                } catch (err) { console.error(err); }
+            });
+
+            function switchTab(tab) {
+                // Simple tab switching logic could go here if more sections are added
+                console.log('Switched to', tab);
+            }
+
+            loadProfile();
+            loadTasks();
+        </script>
+    </footer>
+</body>
+</html>

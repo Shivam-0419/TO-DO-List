@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            TO-DO LIST
+        </title>
+        <link rel="stylesheet" href="style.css" > 
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="logo">TO-DO</div>
+            <div class="nav-links">
+                <!-- Links will be dynamically populated by ui-utils.js -->
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="input-section">
+                <h1>Create a Task</h1>
+                <p>Enter your task and it will be saved to a new page.</p>
+                <div class="input-group">
+                    <input type="text" id="taskInput" placeholder="What needs to be done?" required>
+                    <button onclick="addTask()" class="add-button">Add Task</button>
+                </div>
+            </div>
+            <ul id="taskList"></ul>
+        </div>
+    
+  
+    <footer>
+        <script src="ui-utils.js"></script>
+        <script src="script.js" ></script>
+    </footer>
+</html>

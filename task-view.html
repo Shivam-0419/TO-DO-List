@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Added - TO-DO LIST</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .task-view-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+        }
+        .success-badge {
+            background: rgba(0, 194, 212, 0.1);
+            color: #00c2d4;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .task-card {
+            background: rgba(15, 38, 71, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 194, 212, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+        .task-display {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: center;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        .task-display input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+        .back-btn {
+            margin-top: 30px;
+            color: #7ecfdf;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            color: #00c2d4;
+            transform: translateX(-5px);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">TO-DO</div>
+        <div class="nav-links">
+            <!-- Populated by ui-utils.js -->
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="task-view-container">
+            <div class="success-badge">Task Successfully Created!</div>
+            <div class="task-card">
+                <div class="task-display">
+                    <input type="checkbox" id="taskCheckbox">
+                    <span id="taskContent">Loading...</span>
+                </div>
+            </div>
+            
+            <div class="input-section" style="margin-top: 60px;">
+                <h2>Add Another Task</h2>
+                <p>Don't stop now! Keep track of everything.</p>
+                <div class="input-group">
+                    <input type="text" id="taskInput" placeholder="What's next?" required>
+                    <button onclick="addTask()" class="add-button">Add Task</button>
+                </div>
+            </div>
+
+            <a href="profile.html" class="back-btn">← View All Tasks in Profile</a>
+        </div>
+    </div>
+
+    <script src="ui-utils.js"></script>
+    <script src="script.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('id');
+
+        async function loadTask() {
+            if (!taskId) {
+                document.getElementById('taskContent').innerText = 'No task ID provided';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/tasks/${taskId}`);
+                if (response.ok) {
+                    const task = await response.json();
+                    document.getElementById('taskContent').innerText = task.text;
+                    document.getElementById('taskCheckbox').checked = task.completed;
+                } else {
+                    document.getElementById('taskContent').innerText = 'Task not found';
+                }
+            } catch (err) {
+                document.getElementById('taskContent').innerText = 'Error loading task';
+            }
+        }
+
+        loadTask();
+    </script>
+</body>
+</html>
